@@ -10,7 +10,7 @@ import { env } from '../config/env.js'
 
 const SYSTEM_PROMPTS = {
   chat: '你是 CampusPilot 的学习助手，面向中国大学生。回答要具体、可执行，优先给出步骤和示例，语言简洁。',
-  plan: '你是学习规划助手。请把用户目标拆解成按天进行的可执行学习步骤，每步包含标题、预计分钟数与一句话要点。',
+  plan: '你是学习规划助手。用户会给你学习目标与天数，你只输出一个 JSON 数组，不要 markdown 代码块、不要任何解释文字。每项格式：{"day":1,"title":"当天主题","minutes":60,"point":"一句话要点"}',
   summarize: '你是资料整理助手。请把用户提供的课程资料压缩成结构化摘要：核心概念、关键结论、易错点。',
   quiz: '你是出题助手。请根据知识点生成题目，包含题干、选项（如有）、答案与解析。'
 }
@@ -82,18 +82,54 @@ const FALLBACK_TEMPLATES = {
 解析：重点在于理解适用条件，而不是死记结论。`
 }
 
-/** 生成学习计划步骤（AI 失败或未配置时返回模板结果） */
+/** 把模型返回的文本解析成结构化步骤；解析失败返回 null，由调用方退回模板 */
+function parsePlanSteps(raw, days) {
+  if (!raw) return null
+  // 兼容模型仍把 JSON 包在 ```json 代码块里的情况
+  const cleaned = String(raw).replace(/```[a-zA-Z]*/g, '').trim()
+  const start = cleaned.indexOf('[')
+  const end = cleaned.lastIndexOf(']')
+  if (start === -1 || end <= start) return null
+
+  let list
+  try {
+    list = JSON.parse(cleaned.slice(start, end + 1))
+  } catch {
+    return null
+  }
+  if (!Array.isArray(list) || list.length === 0) return null
+
+  return list.slice(0, days).map((item, index) => ({
+    day: Number(item?.day) || index + 1,
+    title: String(item?.title || `第 ${index + 1} 天`).slice(0, 60),
+    minutes: Number(item?.minutes) || 60,
+    point: String(item?.point || item?.desc || item?.detail || '').slice(0, 120),
+    done: false
+  }))
+}
+
+/**
+ * 生成学习计划步骤
+ * 注意：必须返回结构化数组。模型输出的是自由文本，直接当成 steps 返回会让
+ * 前端对字符串调用 .map() 而整页崩溃，因此这里强制解析成 JSON，失败则退回模板。
+ */
 async function generatePlanSteps(goal, days = 7) {
-  const ai = await callModel('plan', `学习目标：${goal}。请拆成 ${days} 天的计划。`).catch(() => null)
-  if (ai) return ai
+  const prompt = `学习目标：${goal}。请拆成 ${days} 天。只返回 JSON 数组，不要 markdown 代码块，不要任何解释文字。`
+  const raw = await callModel('plan', prompt).catch(() => null)
+  const steps = parsePlanSteps(raw, days)
+  if (steps) return { steps, usedAi: true }
 
   const phase = ['基础概念与术语', '核心流程与原理', '典型例题精讲', '动手实践与调试', '综合练习', '查漏补缺', '复盘与自测']
-  return Array.from({ length: days }).map((_, index) => ({
-    day: index + 1,
-    title: `第 ${index + 1} 天：${phase[index % phase.length]}`,
-    minutes: index % 3 === 2 ? 90 : 60,
-    point: `${goal} 的${phase[index % phase.length]}，完成后做一次 3 分钟复述`
-  }))
+  return {
+    steps: Array.from({ length: days }).map((_, index) => ({
+      day: index + 1,
+      title: `第 ${index + 1} 天：${phase[index % phase.length]}`,
+      minutes: index % 3 === 2 ? 90 : 60,
+      point: `${goal} 的${phase[index % phase.length]}，完成后做一次 3 分钟复述`,
+      done: false
+    })),
+    usedAi: false
+  }
 }
 
 /* --------------------------------- 对外接口 --------------------------------- */
@@ -128,9 +164,9 @@ export const aiService = {
   async studyPlan(goal, days = 7) {
     const input = String(goal || '').trim()
     if (!input) throw new Error('缺少学习目标')
-    const summary = await callModel('plan', `学习目标：${input}`).catch(() => null)
-    const steps = await generatePlanSteps(input, days)
-    return { goal: input, days, steps, overview: summary, provider: env.ai.apiKey ? env.ai.model : 'local-fallback' }
+    // 只调用一次模型：步骤由同一份 JSON 产出，避免重复计费
+    const { steps, usedAi } = await generatePlanSteps(input, days)
+    return { goal: input, days, steps, provider: usedAi ? env.ai.model : 'local-fallback' }
   },
 
   /**

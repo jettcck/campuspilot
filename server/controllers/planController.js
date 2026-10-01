@@ -23,7 +23,7 @@ export const planController = {
     if (!plan || plan.userId !== req.user.id) throw new ApiError(404, '学习计划不存在', 'PLAN_NOT_FOUND')
 
     const index = Number(req.body.index)
-    const steps = [...(plan.steps || [])]
+    const steps = Array.isArray(plan.steps) ? [...plan.steps] : []
     if (!steps[index]) throw new ApiError(400, '步骤序号不正确', 'STEP_INVALID')
 
     steps[index] = { ...steps[index], done: Boolean(req.body.done) }

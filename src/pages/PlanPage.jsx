@@ -3,6 +3,9 @@ import { api } from '../api/client.js'
 import { useApi } from '../hooks/useApi.js'
 import { useToast } from '../components/Toast.jsx'
 
+/** 步骤必须是数组才能渲染；历史脏数据或接口异常时退回空数组，避免整页崩溃 */
+const stepsOf = (plan) => (Array.isArray(plan.steps) ? plan.steps : [])
+
 /** 学习计划页：AI 生成计划 + 步骤勾选 + 任务清单 */
 export default function PlanPage() {
   const toast = useToast()
@@ -94,7 +97,7 @@ export default function PlanPage() {
                 <div className="plan-head">
                   <div>
                     <b>{plan.goal}</b>
-                    <span>{plan.startDate} 至 {plan.endDate} · {plan.steps?.length || 0} 个步骤</span>
+                    <span>{plan.startDate} 至 {plan.endDate} · {stepsOf(plan).length} 个步骤</span>
                   </div>
                   <div className="plan-actions">
                     <span className={'status-pill ' + plan.status}>{plan.status === 'completed' ? '已完成' : '进行中'}</span>
@@ -103,7 +106,7 @@ export default function PlanPage() {
                 </div>
                 <div className="progress-line"><i style={{ width: `${plan.progress || 0}%` }} /></div>
                 <div className="step-list">
-                  {(plan.steps || []).map((step, index) => (
+                  {stepsOf(plan).map((step, index) => (
                     <div className={'step-row ' + (step.done ? 'done' : '')} key={index}>
                       <button className="check" onClick={() => toggleStep(plan, index, !step.done)}>{step.done ? '✓' : ''}</button>
                       <div><b>{step.title}</b><span>{step.point} · 预计 {step.minutes} 分钟</span></div>

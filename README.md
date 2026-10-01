@@ -1,0 +1,156 @@
+# CampusPilot · 大学生智能学习与校园协作平台
+
+一个面向大学生的全栈 Web 应用：把**学习计划、课程资料、AI 学习助手、小组协作、校园信息、学习数据可视化**集中在一个工作台里。
+
+项目覆盖完整的全栈开发流程：需求分析 → 系统设计 → 前端开发 → 后端开发 → 数据库设计 → API 设计 → 身份认证 → AI 集成 → 测试 → 容器化部署。
+
+---
+
+## 一、技术栈
+
+| 层次 | 技术选型 |
+| --- | --- |
+| 前端 | React 18 + Vite、哈希路由、Context 状态管理、CSS 变量主题、响应式布局 |
+| 后端 | Node.js + Express、分层架构（routes → controllers → services → 数据层） |
+| 数据库 | MongoDB（Mongoose）/ 本地 JSON 文件（零依赖模式） |
+| 认证 | JWT（jsonwebtoken）+ bcrypt 密码哈希 + 权限中间件 |
+| AI | OpenAI 兼容协议（OpenAI / DeepSeek / 通义千问 / 智谱 / Ollama），无 Key 时自动降级为内置规则引擎 |
+| 文件 | multer 上传 + 扩展名白名单 + 静态托管 |
+| 部署 | Docker 多阶段构建 + docker-compose + Nginx 反向代理 + GitHub Actions |
+
+---
+
+## 二、功能清单
+
+| 模块 | 功能 |
+| --- | --- |
+| 用户认证 | 注册、登录、JWT 鉴权、资料修改、密码修改 |
+| 学习计划 | AI 按天拆解学习目标、步骤勾选、进度自动计算 |
+| 任务管理 | 任务增删改查、完成状态切换、按状态/课程/关键词筛选 |
+| 课程资料 | 课程管理、资料上传、在线查看、AI 生成资料摘要 |
+| AI 学习室 | 学习问答、资料总结、生成自测题、个性化学习建议、对话历史 |
+| 小组协作 | 创建小组、邀请码加入、成员展示、组长解散 |
+| 校园信息 | 讲座 / 比赛 / 通知 / 活动分类浏览 |
+| 数据可视化 | 本周学习时长、任务完成率、连续学习天数、7 天专注趋势柱状图、完成率环形图 |
+
+---
+
+## 三、快速开始
+
+### 1. 安装依赖
+
+```bash
+npm install
+```
+
+### 2. 配置环境变量（可选）
+
+```bash
+cp .env.example .env
+```
+
+不配置任何变量也能直接运行 —— 此时使用本地文件存储 + 内置 AI 规则引擎。
+
+### 3. 启动后端
+
+```bash
+npm run server
+# 接口地址 http://localhost:3001/api
+```
+
+### 4. 启动前端（开发模式）
+
+```bash
+npm run dev
+# 访问 http://localhost:5173
+```
+
+### 5. 演示账号
+
+首次启动会自动创建演示数据：
+
+```text
+邮箱：demo@campuspilot.dev
+密码：Demo123456
+```
+
+### 6. 生产模式（单进程部署）
+
+```bash
+npm run build
+NODE_ENV=production npm start
+# 访问 http://localhost:3001
+```
+
+生产模式下 Express 同时托管前端页面与 API，只需暴露一个端口。
+
+---
+
+## 四、项目结构
+
+```text
+campuspilot/
+├── src/                        # 前端
+│   ├── api/client.js           # 统一 API 客户端（自动附带 JWT）
+│   ├── components/             # 布局、图表、全局提示
+│   ├── context/                # 登录状态
+│   ├── hooks/                  # 通用数据请求 Hook
+│   ├── pages/                  # 7 个业务页面
+│   ├── App.jsx                 # 哈希路由与鉴权守卫
+│   └── styles.css              # 设计系统与主题
+├── server/                     # 后端
+│   ├── config/                 # 环境变量、Schema 定义
+│   ├── middleware/             # 鉴权、错误处理、文件上传
+│   ├── controllers/            # 业务控制器
+│   ├── services/               # AI 服务、统计服务、演示数据
+│   ├── routes/index.js         # 全部路由注册
+│   ├── utils/                  # 数据存储、JWT、响应封装
+│   ├── app.js                  # Express 应用装配
+│   └── index.js                # 启动入口
+├── docs/                       # 开发文档 / API 文档 / 用户手册 / 部署手册
+├── deploy/nginx.conf           # 反向代理配置
+├── Dockerfile                  # 多阶段镜像构建
+└── docker-compose.yml          # 应用 + Nginx 编排
+```
+
+---
+
+## 五、设计要点
+
+**1. 数据层双模式**
+`server/utils/store.js` 提供统一的异步集合接口。未配置 `MONGODB_URI` 时使用本地 JSON 文件持久化，配置后自动切换为 MongoDB，业务代码零改动。这样项目在评审、演示、离线环境下都能直接跑起来。
+
+**2. AI 服务抽象**
+`server/services/aiService.js` 把「模型调用」与「业务逻辑」解耦，通过环境变量切换厂商。未配置 Key 时使用内置规则引擎产出结构化结果，保证功能链路完整可演示。
+
+**3. 分层架构**
+路由只负责注册，参数校验与业务逻辑放在控制器，跨模块能力（AI、统计）放在服务层，所有异常由全局错误中间件统一转成 JSON 响应。
+
+**4. 统一响应结构**
+
+```json
+{ "success": true, "message": "操作成功", "data": {}, "error": null }
+```
+
+---
+
+## 六、文档索引
+
+| 文档 | 路径 |
+| --- | --- |
+| 开发文档 | [docs/开发文档.md](docs/开发文档.md) |
+| API 文档 | [docs/API.md](docs/API.md) |
+| 用户手册 | [docs/用户手册.md](docs/用户手册.md) |
+| 部署手册 | [docs/部署手册.md](docs/部署手册.md) |
+
+---
+
+## 七、常用命令
+
+```bash
+npm run dev       # 前端开发服务器（含 /api 代理）
+npm run server    # 启动后端 API
+npm run build     # 构建前端产物到 dist/
+npm start         # 生产模式启动（需先 build）
+docker compose up -d --build   # 容器化部署
+```

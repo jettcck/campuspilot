@@ -1,0 +1,37 @@
+services:
+  # 应用服务：Express API + 前端静态资源
+  app:
+    build: .
+    container_name: campuspilot-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CLIENT_URL: ${CLIENT_URL:-http://localhost}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      MONGODB_URI: ${MONGODB_URI:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.deepseek.com/v1}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+    volumes:
+      - uploads:/app/uploads
+      - appdata:/app/server/data
+    ports:
+      - "127.0.0.1:3001:3001"
+
+  # 反向代理：对外暴露 80 端口，托管静态资源并转发 /api
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: campuspilot-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - uploads:/var/www/uploads:ro
+    ports:
+      - "80:80"
+
+volumes:
+  uploads:
+  appdata:

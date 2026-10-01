@@ -1,0 +1,14 @@
+# 统一换行符，避免 Windows 检出后 Linux 上的 shell 脚本因 CRLF 无法执行
+* text=auto
+
+# Linux 侧执行的文件必须是 LF
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.conf text eol=lf
+
+# Windows 专用脚本保持 CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf

@@ -53,9 +53,13 @@ PORT=3001
 CLIENT_URL=http://${PUBLIC_IP}
 JWT_SECRET=${JWT_SECRET_VALUE}
 MONGODB_URI=
+# AI_PROVIDER 可选：deepseek / qwen / zhipu / moonshot / openai / ollama
+# 切换厂商只改这一行，baseUrl 与 model 自动套用对应预设
+AI_PROVIDER=deepseek
 AI_API_KEY=
-AI_BASE_URL=https://api.deepseek.com/v1
-AI_MODEL=deepseek-chat
+# 以下两项留空即用 AI_PROVIDER 的预设值，需要自定义网关或私有部署时再填
+# AI_BASE_URL=https://api.deepseek.com/v1
+# AI_MODEL=deepseek-chat
 UPLOAD_DIR=uploads
 MAX_UPLOAD_SIZE=10485760
 EOF
@@ -90,12 +94,17 @@ done
 
 if curl -sf http://localhost/api/health >/dev/null 2>&1; then
   PUBLIC_IP=$(grep -oP 'CLIENT_URL=\K.*' .env | head -1 || echo "http://localhost")
+  AI_MODE=$(curl -sf --max-time 20 http://localhost/api/ai/status | grep -oP '"mode":"\K[^"]+' || echo "unknown")
   echo ""
   info "部署成功！"
   echo "  访问地址：${PUBLIC_IP}"
   echo "  接口地址：${PUBLIC_IP}/api/health"
+  echo "  AI 状态：${AI_MODE}"
   echo "  演示账号：demo@campuspilot.dev / Demo123456"
   echo ""
+  if [[ "$AI_MODE" != "remote" ]]; then
+    warn "AI 未接通（当前 ${AI_MODE}）；如需真实大模型，请填写服务器上 .env 的 AI_API_KEY 后执行 docker compose up -d"
+  fi
   docker compose ps
 else
   error "健康检查失败，请执行 docker compose logs -f app 查看日志"

@@ -1,5 +1,12 @@
 # CampusPilot · 大学生智能学习与校园协作平台
 
+[![CI](https://github.com/jettcck/campuspilot/actions/workflows/ci.yml/badge.svg)](https://github.com/jettcck/campuspilot/actions/workflows/ci.yml)
+![Node.js](https://img.shields.io/badge/Node.js-20-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white)
+![Deploy](https://img.shields.io/badge/deploy-Render-46E3B7?logo=render&logoColor=black)
+
 一个面向大学生的全栈 Web 应用：把**学习计划、课程资料、AI 学习助手、小组协作、校园信息、学习数据可视化**集中在一个工作台里。
 
 项目覆盖完整的全栈开发流程：需求分析 → 系统设计 → 前端开发 → 后端开发 → 数据库设计 → API 设计 → 身份认证 → AI 集成 → 测试 → 容器化部署。
@@ -129,7 +136,7 @@ campuspilot/
 │   ├── utils/                  # 数据存储、JWT、响应封装
 │   ├── app.js                  # Express 应用装配
 │   └── index.js                # 启动入口
-├── docs/                       # 开发文档 / API 文档 / 用户手册 / 部署手册
+├── docs/                       # 开发文档 / API 文档 / 用户手册 / 部署手册 / 技术博客 / 答辩大纲
 ├── deploy/nginx.conf           # 反向代理配置
 ├── Dockerfile                  # 多阶段镜像构建
 └── docker-compose.yml          # 应用 + Nginx 编排
@@ -164,6 +171,8 @@ campuspilot/
 | API 文档 | [docs/API.md](docs/API.md) |
 | 用户手册 | [docs/用户手册.md](docs/用户手册.md) |
 | 部署手册 | [docs/部署手册.md](docs/部署手册.md) |
+| 技术博客 | [docs/技术博客.md](docs/技术博客.md) |
+| 答辩 PPT 大纲 | [docs/答辩PPT大纲.md](docs/答辩PPT大纲.md) |
 
 ---
 

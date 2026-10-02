@@ -7,12 +7,22 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      # 站点对外地址：同时作为 CORS 白名单与 HTTPS 跳转的目标
       CLIENT_URL: ${CLIENT_URL:-http://localhost}
+      # 反向代理之后必须信任一层代理，否则限流会把所有请求算到代理 IP 上
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      # 强制 HTTPS：代理声明原始协议为 http 时返回 301
+      ENFORCE_HTTPS: ${ENFORCE_HTTPS:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       MONGODB_URI: ${MONGODB_URI:-}
+      # 确无数据库时需显式开启文件存储，否则生产模式会拒绝启动
+      ALLOW_FILE_STORAGE: ${ALLOW_FILE_STORAGE:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-deepseek}
       AI_API_KEY: ${AI_API_KEY:-}
-      AI_BASE_URL: ${AI_BASE_URL:-https://api.deepseek.com/v1}
-      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+      # 留空即套用 AI_PROVIDER 的厂商预设，切勿写死某一家，否则切换厂商会指向错误网关
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
     volumes:
       - uploads:/app/uploads
       - appdata:/app/server/data
@@ -31,6 +41,8 @@ services:
       - uploads:/var/www/uploads:ro
       # certbot 在宿主机签发的证书，只读挂载给容器
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      # ACME 校验目录：certbot 写入宿主机，容器只读提供 /.well-known/acme-challenge/
+      - /var/www/certbot:/var/www/certbot:ro
     ports:
       - "80:80"
       - "443:443"

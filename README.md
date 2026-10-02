@@ -212,3 +212,11 @@ npm run smoke     # 冒烟测试（自包含，无需外部数据库）
 npm start         # 生产模式启动（需先 build）
 docker compose up -d --build   # 容器化部署
 ```
+
+服务器端一键部署：
+
+```bash
+sudo bash deploy/deploy.sh                              # 仅 HTTP（IP 访问）
+sudo bash deploy/deploy.sh campus.example.com me@you.com  # 部署并自动签发 HTTPS 证书
+sudo bash deploy/setup-https.sh campus.example.com me@you.com  # 仅补签证书与开启强制跳转
+```

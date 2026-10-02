@@ -6,6 +6,28 @@
 
 ---
 
+## 在线演示
+
+| 项 | 值 |
+| --- | --- |
+| 访问地址 | https://campuspilot-0yx1.onrender.com |
+| 演示账号 | `demo@campuspilot.dev` |
+| 演示密码 | `Demo123456` |
+
+线上环境说明：
+
+| 组件 | 方案 |
+| --- | --- |
+| 应用托管 | Render 免费实例（Docker 部署，自动 HTTPS） |
+| 数据库 | MongoDB Atlas 免费集群（M0，512 MB） |
+| AI 服务 | DeepSeek `deepseek-chat`（OpenAI 兼容协议） |
+| CI | GitHub Actions（构建 + 健康检查 + 镜像校验） |
+
+> 免费实例闲置 15 分钟后会休眠，**首次访问需等待 30–60 秒冷启动**，之后访问流畅。
+> 演示前建议先自行访问一次预热。上传的课程资料存放于实例临时磁盘，重新部署后会清空；课程、任务、学习计划等数据均在 Atlas 中，不受影响。
+
+---
+
 ## 一、技术栈
 
 | 层次 | 技术选型 |
@@ -16,7 +38,7 @@
 | 认证 | JWT（jsonwebtoken）+ bcrypt 密码哈希 + 权限中间件 |
 | AI | OpenAI 兼容协议（OpenAI / DeepSeek / 通义千问 / 智谱 / Ollama），无 Key 时自动降级为内置规则引擎 |
 | 文件 | multer 上传 + 扩展名白名单 + 静态托管 |
-| 部署 | Docker 多阶段构建 + docker-compose + Nginx 反向代理 + GitHub Actions |
+| 部署 | Docker 多阶段构建 + Render 云托管（自动 HTTPS）+ docker-compose + Nginx 反向代理 + GitHub Actions |
 
 ---
 

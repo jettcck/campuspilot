@@ -4,7 +4,7 @@ import routes from './routes/index.js'
 import { errorHandler, notFoundHandler } from './middleware/error.js'
 import { env, isProd } from './config/env.js'
 import { httpLogger, requestContext } from './middleware/observability.js'
-import { apiLimiter, compressionMiddleware, corsPolicy, securityHeaders } from './middleware/security.js'
+import { apiLimiter, compressionMiddleware, corsPolicy, enforceHttps, securityHeaders } from './middleware/security.js'
 
 const app = express()
 
@@ -16,6 +16,8 @@ app.disable('x-powered-by')
 app.use(requestContext)
 app.use(httpLogger)
 app.use(securityHeaders)
+// 放在安全头之后：跳转响应同样带上 HSTS，浏览器会记住后续必须走 HTTPS
+app.use(enforceHttps)
 app.use(corsPolicy)
 app.use(compressionMiddleware)
 

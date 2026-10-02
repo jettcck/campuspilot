@@ -19,7 +19,7 @@ services:
     ports:
       - "127.0.0.1:3001:3001"
 
-  # 反向代理：对外暴露 80 端口，托管静态资源并转发 /api
+  # 反向代理：对外暴露 80/443，完成 HTTP→HTTPS 跳转、静态资源托管与 /api 转发
   nginx:
     image: nginx:1.27-alpine
     container_name: campuspilot-nginx
@@ -29,8 +29,11 @@ services:
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - uploads:/var/www/uploads:ro
+      # certbot 在宿主机签发的证书，只读挂载给容器
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - "80:80"
+      - "443:443"
 
 volumes:
   uploads:

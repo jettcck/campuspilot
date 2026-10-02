@@ -185,6 +185,9 @@ campuspilot/
 启动前校验必需配置（缺失即拒绝启动）；`/api/health` 用于容器存活判定，
 `/api/health/ready` 校验数据源就绪后返回 200/503；收到 SIGTERM 先停流量再释放数据库连接。
 
+**8. 传输层安全**
+生产环境强制 HTTPS：Nginx 的 80 端口只做 `301` 跳转，应用层 `enforceHttps` 中间件读取代理注入的 `X-Forwarded-Proto` 作第二道保险，探针路径豁免以免平台健康检查被重定向；配合 `helmet` 下发 HSTS（180 天），浏览器会记住后续必须走 HTTPS。
+
 ---
 
 ## 六、文档索引

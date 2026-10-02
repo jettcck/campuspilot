@@ -76,6 +76,8 @@ export const env = {
   corsOrigins: list(process.env.CLIENT_URL, nodeEnv === 'production' ? [] : ['http://localhost:5173', 'http://localhost:3001']),
   // 部署在 Render / Nginx 之后需信任一层代理，才能拿到真实客户端 IP（限流按 IP 统计依赖它）
   trustProxy: bool(process.env.TRUST_PROXY, nodeEnv === 'production'),
+  // 强制 HTTPS：仅当反向代理声明原始协议为 http 时才跳转，避免内部探针与本地直连被误跳
+  enforceHttps: bool(process.env.ENFORCE_HTTPS, nodeEnv === 'production'),
   logLevel: process.env.LOG_LEVEL || (nodeEnv === 'production' ? 'info' : 'debug'),
   uploadDir: process.env.UPLOAD_DIR || 'uploads',
   // 本地文件存储的数据目录，可指向临时目录以便测试与多实例隔离

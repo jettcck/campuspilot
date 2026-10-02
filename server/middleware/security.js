@@ -33,6 +33,32 @@ export const securityHeaders = helmet({
   hsts: isProd ? { maxAge: 15552000, includeSubDomains: true, preload: false } : false
 })
 
+/* ------------------------------ 强制 HTTPS ------------------------------ */
+
+/** 探针路径不参与跳转：反向代理与容器编排的健康检查走明文 HTTP，重定向会被判定为异常 */
+const HTTPS_EXEMPT_PATHS = new Set(['/api/health', '/api/health/ready'])
+
+/**
+ * 只认反向代理注入的 X-Forwarded-Proto：
+ * - 代理声明原始协议为 https（或未声明）时放行，不做二次跳转，避免重定向死循环
+ * - 仅当代理明确声明原始协议为 http 时才跳转，因此本地直连与 CI 的明文请求不受影响
+ */
+export const enforceHttps = (req, res, next) => {
+  if (!isProd || !env.enforceHttps) return next()
+  if (HTTPS_EXEMPT_PATHS.has(req.path)) return next()
+
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase()
+  if (forwardedProto !== 'http') return next()
+
+  const host = req.headers.host
+  if (!host) return next()
+
+  return res.redirect(301, `https://${host}${req.originalUrl}`)
+}
+
 /* -------------------------------- 跨域策略 -------------------------------- */
 
 const isSameOrigin = (origin, host) => {

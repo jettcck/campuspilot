@@ -14,16 +14,33 @@ export default function DashboardPage({ onNavigate }) {
   const [draft, setDraft] = useState('')
   const [aiReply, setAiReply] = useState('')
   const [asking, setAsking] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   const { data: statsData, reload: reloadStats } = useApi(() => api.statsOverview(), [])
   const { data: weeklyData } = useApi(() => api.statsWeekly(), [])
   const { data: taskData, reload: reloadTasks } = useApi(() => api.tasks(), [])
-  const { data: courseData } = useApi(() => api.courses(), [])
+  const { data: courseData, reload: reloadCourses } = useApi(() => api.courses(), [])
 
   const stats = statsData?.stats
   const weekly = weeklyData?.weekly || []
   const tasks = taskData?.tasks || []
   const courses = (courseData?.courses || []).slice(0, 3)
+
+  // 新账号是空工作台，提供一次性示例数据导入，避免首次进入就是空白页
+  const emptyWorkspace = Boolean(statsData) && (stats?.totalCount ?? 0) === 0 && (stats?.courseCount ?? 0) === 0
+
+  const importSample = async () => {
+    setImporting(true)
+    try {
+      await api.importSampleData()
+      await Promise.all([reloadStats(), reloadTasks(), reloadCourses()])
+      toast('示例数据已导入，随时可以删除')
+    } catch (error) {
+      toast(error.message, 'error')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const toggleTask = async (task) => {
     try {
@@ -70,6 +87,18 @@ export default function DashboardPage({ onNavigate }) {
         </div>
         <button className="primary-button" onClick={quickAdd}><span>＋</span> 新建任务</button>
       </section>
+
+      {emptyWorkspace && (
+        <section className="onboarding-banner">
+          <div>
+            <b>你的工作台还是空的</b>
+            <p>先导入一份示例课程与任务，快速体验完整流程；熟悉之后随时删除，再录入自己的内容。</p>
+          </div>
+          <button className="primary-button" onClick={importSample} disabled={importing}>
+            {importing ? '导入中…' : '一键导入示例数据'}
+          </button>
+        </section>
+      )}
 
       <section className="stats-grid">
         <div className="stat-card dark">

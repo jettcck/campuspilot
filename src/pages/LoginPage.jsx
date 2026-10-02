@@ -56,7 +56,7 @@ export default function LoginPage() {
               <input type="email" value={form.email} onChange={update('email')} placeholder="you@example.com" required />
             </label>
             <label className="field"><span>密码</span>
-              <input type="password" value={form.password} onChange={update('password')} placeholder="至少 6 位" required />
+              <input type="password" value={form.password} onChange={update('password')} placeholder="至少 8 位" required />
             </label>
 
             {mode === 'register' && (

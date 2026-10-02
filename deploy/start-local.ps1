@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # CampusPilot 本地一键启动脚本（Windows / PowerShell）
 # 作用：拉起后端服务 + Cloudflare 临时隧道，并自动打印公网地址
 #
@@ -145,7 +145,7 @@ try {
         Write-Host "  公网访问： $publicUrl" -ForegroundColor Cyan
         Write-Host "  API 自检： $publicUrl/api/ai/status" -ForegroundColor Cyan
         Write-Host ""
-        Write-Host "  演示账号： demo@campuspilot.dev / Demo123456" -ForegroundColor DarkGray
+        Write-Host "  首次使用请注册账号（工作台支持一键导入示例数据）" -ForegroundColor DarkGray
         Write-Host "  地址已存至： $UrlFile" -ForegroundColor DarkGray
     } else {
         Write-Host "[5/5] 隧道已启动，但未能自动解析公网地址" -ForegroundColor Yellow

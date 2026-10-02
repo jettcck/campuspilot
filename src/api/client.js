@@ -49,6 +49,9 @@ export const api = {
   me: () => request('/auth/me'),
   updateProfile: (body) => request('/auth/profile', { method: 'PUT', body }),
   updatePassword: (body) => request('/auth/password', { method: 'PUT', body }),
+  // 新用户引导
+  onboardingStatus: () => request('/onboarding/status'),
+  importSampleData: () => request('/onboarding/sample-data', { method: 'POST' }),
   // 任务
   tasks: (query = '') => request(`/tasks${query}`),
   createTask: (body) => request('/tasks', { method: 'POST', body }),

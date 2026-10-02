@@ -9,20 +9,25 @@
     "server": "node server/index.js",
     "start": "node server/index.js",
     "build": "vite build",
+    "smoke": "node scripts/smoke-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
+    "compression": "^1.8.2",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1",
     "multer": "^1.4.5-lts.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "vite": "^5.3.4"
-  },
-  "devDependencies": {}
+    "vite": "^5.3.4",
+    "zod": "^4.6.5"
+  }
 }

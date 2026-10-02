@@ -12,7 +12,7 @@ import { env } from '../config/env.js'
  * 两种模式对外暴露完全一致的异步接口，因此上层控制器无需区分。
  */
 
-const DATA_DIR = path.resolve(process.cwd(), 'server', 'data')
+const DATA_DIR = env.dataDir
 const DATA_FILE = path.join(DATA_DIR, 'db.json')
 
 let memory = null
@@ -49,7 +49,7 @@ export async function connectDatabase(uri = env.mongoUri) {
   if (!uri) {
     driver = 'file'
     loadMemory()
-    console.log('[store] 未配置 MONGODB_URI，使用本地文件存储（server/data/db.json）')
+    console.log(`[store] 未配置 MONGODB_URI，使用本地文件存储（${DATA_FILE}）`)
     return driver
   }
   try {
@@ -57,6 +57,7 @@ export async function connectDatabase(uri = env.mongoUri) {
     mongoReady = true
     driver = 'mongo'
     console.log('[store] MongoDB 连接成功')
+    await syncIndexes()
   } catch (error) {
     mongoReady = false
     driver = 'file'
@@ -64,6 +65,30 @@ export async function connectDatabase(uri = env.mongoUri) {
     console.warn('[store] MongoDB 连接失败，已降级为本地文件存储：', error.message)
   }
   return driver
+}
+
+/**
+ * 同步集合索引
+ * 索引既是查询性能的保障，也是唯一性约束（如邮箱唯一）的落地手段。
+ * 同步失败不阻断启动，但会明确告警，避免约束静默缺失。
+ */
+async function syncIndexes() {
+  try {
+    await Promise.all(collectionNames.map((name) => getModel(name).syncIndexes()))
+    console.log('[store] MongoDB 索引已同步')
+  } catch (error) {
+    console.error('[store] MongoDB 索引同步失败（数据约束可能未生效）：', error.message)
+  }
+}
+
+/** 关闭数据库连接，供优雅退出时调用 */
+export async function closeDatabase() {
+  if (!mongoReady) return
+  try {
+    await mongoose.connection.close()
+  } finally {
+    mongoReady = false
+  }
 }
 
 export const getDriver = () => driver
@@ -119,6 +144,7 @@ function fileAdapter(name) {
     async find(filter = {}, options = {}) {
       let list = all().filter((doc) => matches(doc, filter))
       if (options.sort) list = sortDocs(list, options.sort)
+      if (options.skip) list = list.slice(options.skip)
       if (options.limit) list = list.slice(0, options.limit)
       return JSON.parse(JSON.stringify(list))
     },
@@ -148,6 +174,17 @@ function fileAdapter(name) {
       saveMemory()
       return true
     },
+    async updateMany(filter, patch) {
+      let updated = 0
+      const list = all()
+      list.forEach((doc, index) => {
+        if (!matches(doc, filter)) return
+        list[index] = { ...doc, ...patch, updatedAt: new Date().toISOString() }
+        updated += 1
+      })
+      if (updated) saveMemory()
+      return updated
+    },
     async deleteMany(filter = {}) {
       const list = all()
       const removed = list.filter((doc) => matches(doc, filter))
@@ -171,6 +208,7 @@ function mongoAdapter(name) {
     async find(filter = {}, options = {}) {
       let query = Model.find(filter)
       if (options.sort) query = query.sort(options.sort)
+      if (options.skip) query = query.skip(options.skip)
       if (options.limit) query = query.limit(options.limit)
       return (await query.lean()).map(toPlain)
     },
@@ -193,6 +231,10 @@ function mongoAdapter(name) {
       if (!mongoose.isValidObjectId(id)) return false
       const result = await Model.findByIdAndDelete(id)
       return Boolean(result)
+    },
+    async updateMany(filter, patch) {
+      const result = await Model.updateMany(filter, patch)
+      return result.modifiedCount || 0
     },
     async deleteMany(filter = {}) {
       const result = await Model.deleteMany(filter)

@@ -1,11 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { collection } from '../utils/store.js'
-import { ApiError, asyncHandler, ok } from '../utils/http.js'
+import { ApiError, asyncHandler, ok, pageMeta, resolvePagination } from '../utils/http.js'
 import { serialize } from '../utils/serialize.js'
 import { UPLOAD_ROOT } from '../middleware/upload.js'
 
 export const courseController = {
+  // 课程同时充当任务/筛选器的下拉数据源，一次性返回全部，不做分页
   list: asyncHandler(async (req, res) => {
     const courses = await collection('courses').find({ userId: req.user.id }, { sort: { createdAt: 1 } })
     ok(res, { courses: courses.map(serialize) })
@@ -41,22 +42,34 @@ export const courseController = {
     ok(res, { course: serialize(updated) }, '课程已更新')
   }),
 
+  /** 删除课程：同步清理其下任务并解绑资料，避免产生孤儿数据 */
   remove: asyncHandler(async (req, res) => {
     const courses = collection('courses')
     const course = await courses.findById(req.params.id)
     if (!course || course.userId !== req.user.id) throw new ApiError(404, '课程不存在', 'COURSE_NOT_FOUND')
-    await courses.deleteById(req.params.id)
-    ok(res, null, '课程已删除')
+
+    const courseId = String(course._id)
+    const removedTasks = await collection('tasks').deleteMany({ userId: req.user.id, courseId })
+    await collection('files').updateMany({ userId: req.user.id, courseId }, { courseId: '' })
+    await courses.deleteById(courseId)
+
+    ok(res, { removedTasks }, `课程已删除，同时清理了 ${removedTasks} 个关联任务`)
   })
 }
 
 export const fileController = {
-  /** 课程资料列表 */
+  /** 课程资料列表（分页） */
   list: asyncHandler(async (req, res) => {
     const filter = { userId: req.user.id }
     if (req.query.courseId) filter.courseId = req.query.courseId
-    const files = await collection('files').find(filter, { sort: { createdAt: -1 } })
-    ok(res, { files: files.map(serialize) })
+
+    const pagination = resolvePagination(req.query)
+    const files = collection('files')
+    const [list, total] = await Promise.all([
+      files.find(filter, { sort: { createdAt: -1 }, skip: pagination.skip, limit: pagination.limit }),
+      files.count(filter)
+    ])
+    ok(res, { files: list.map(serialize), ...pageMeta(total, pagination) })
   }),
 
   /** 上传资料：multer 已把文件落到 uploads 目录 */

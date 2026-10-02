@@ -1,13 +1,19 @@
 import { collection } from '../utils/store.js'
-import { ApiError, asyncHandler, ok } from '../utils/http.js'
+import { ApiError, asyncHandler, ok, pageMeta, resolvePagination } from '../utils/http.js'
 import { serialize } from '../utils/serialize.js'
 
 export const planController = {
   list: asyncHandler(async (req, res) => {
     const filter = { userId: req.user.id }
     if (req.query.status) filter.status = req.query.status
-    const plans = await collection('studyplans').find(filter, { sort: { createdAt: -1 } })
-    ok(res, { plans: plans.map(serialize) })
+
+    const pagination = resolvePagination(req.query)
+    const plans = collection('studyplans')
+    const [list, total] = await Promise.all([
+      plans.find(filter, { sort: { createdAt: -1 }, skip: pagination.skip, limit: pagination.limit }),
+      plans.count(filter)
+    ])
+    ok(res, { plans: list.map(serialize), ...pageMeta(total, pagination) })
   }),
 
   detail: asyncHandler(async (req, res) => {

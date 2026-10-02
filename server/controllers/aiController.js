@@ -1,5 +1,5 @@
 import { collection } from '../utils/store.js'
-import { ApiError, asyncHandler, ok } from '../utils/http.js'
+import { ApiError, asyncHandler, ok, pageMeta, resolvePagination } from '../utils/http.js'
 import { serialize } from '../utils/serialize.js'
 import { aiService } from '../services/aiService.js'
 
@@ -58,11 +58,15 @@ export const aiController = {
     ok(res, { quiz, provider })
   }),
 
-  /** 对话历史 */
+  /** 对话历史（分页） */
   history: asyncHandler(async (req, res) => {
-    const limit = Math.min(Number(req.query.limit) || 20, 100)
-    const chats = await collection('aichats').find({ userId: req.user.id }, { sort: { createdAt: -1 }, limit })
-    ok(res, { history: chats.map(serialize) })
+    const pagination = resolvePagination(req.query, 20)
+    const chats = collection('aichats')
+    const [list, total] = await Promise.all([
+      chats.find({ userId: req.user.id }, { sort: { createdAt: -1 }, skip: pagination.skip, limit: pagination.limit }),
+      chats.count({ userId: req.user.id })
+    ])
+    ok(res, { history: list.map(serialize), ...pageMeta(total, pagination) })
   }),
 
   /** 基于学习数据生成个性化建议 */

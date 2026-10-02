@@ -11,7 +11,7 @@ export const authController = {
     const { username, email, password, school, major, grade } = req.body
     if (!username || !email || !password) throw new ApiError(400, '用户名、邮箱和密码为必填项', 'PARAM_MISSING')
     if (!EMAIL_PATTERN.test(email)) throw new ApiError(400, '邮箱格式不正确', 'EMAIL_INVALID')
-    if (String(password).length < 6) throw new ApiError(400, '密码长度至少 6 位', 'PASSWORD_WEAK')
+    if (String(password).length < 8) throw new ApiError(400, '密码长度至少 8 位', 'PASSWORD_WEAK')
 
     const users = collection('users')
     const exists = await users.findOne({ email: String(email).toLowerCase() })
@@ -66,7 +66,7 @@ export const authController = {
   updatePassword: asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
     if (!oldPassword || !newPassword) throw new ApiError(400, '请填写原密码和新密码', 'PARAM_MISSING')
-    if (String(newPassword).length < 6) throw new ApiError(400, '新密码长度至少 6 位', 'PASSWORD_WEAK')
+    if (String(newPassword).length < 8) throw new ApiError(400, '新密码长度至少 8 位', 'PASSWORD_WEAK')
 
     const user = await collection('users').findById(req.user.id)
     const matched = await comparePassword(String(oldPassword), user.passwordHash)

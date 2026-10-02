@@ -21,7 +21,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/dist ./dist
 
-RUN mkdir -p /app/uploads /app/server/data
+RUN mkdir -p /app/uploads /app/server/data && chown -R node:node /app
+# 以非 root 用户运行：容器被突破时限制攻击面
+USER node
 
 EXPOSE 3001
 # 端口用 ${PORT} 而非写死：Render / Railway 等平台会注入自己的 PORT

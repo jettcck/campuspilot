@@ -147,6 +147,13 @@
 .app-footer{display:flex;align-items:center;justify-content:space-between;padding:26px 47px 34px;font:500 9px 'DM Mono';color:#a3aca6;max-width:1190px;margin:0 auto}
 .app-footer button{border:0;background:transparent;color:#819a6a;font:600 10px Manrope;cursor:pointer}
 .toast.error{background:#3a2620;border-color:#6d4436;color:#f6ded4}
+.onboarding-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;background:#26332d;color:#eff7eb;border-radius:12px;padding:20px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+.onboarding-banner:after{content:'✦';position:absolute;right:-10px;top:-40px;color:#c9f36b;font-size:120px;opacity:.12;pointer-events:none}
+.onboarding-banner b{display:block;font-size:13px;letter-spacing:-.2px}
+.onboarding-banner p{font-size:11px;line-height:1.6;color:#b6c6ba;margin:7px 0 0;max-width:620px}
+.onboarding-banner button{flex:none;background:var(--lime);color:#26302c;box-shadow:none}
+/* 装饰性元素不接收鼠标事件，避免遮挡其下方的可点击按钮 */
+.upgrade-card:after,.stat-card.dark:after,.ai-card:after,.ai-glow,.auth-visual:after,.onboarding-banner:after{pointer-events:none}
 
 @media(max-width:1250px){.ai-workspace,.plan-grid{grid-template-columns:1fr}.two-column{grid-template-columns:1fr}.auth-page{grid-template-columns:1fr}.auth-visual{display:none}}
 @media(max-width:1150px){.content-wrap{padding-left:32px;padding-right:32px}.topbar{padding:0 32px}.mini-chart{gap:8px}.app-footer{padding-left:32px;padding-right:32px}}

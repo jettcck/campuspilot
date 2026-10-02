@@ -70,14 +70,14 @@ Authorization: Bearer <JWT_TOKEN>
 }
 ```
 
-约束：邮箱格式校验、邮箱唯一、密码至少 6 位。
+约束：邮箱格式校验、邮箱唯一、密码至少 8 位且不超过 72 位。
 
 ### POST /auth/login（公开）
 
 请求：
 
 ```json
-{ "email": "demo@campuspilot.dev", "password": "Demo123456" }
+{ "email": "student@example.com", "password": "YourPass123" }
 ```
 
 响应结构同注册。
@@ -99,7 +99,7 @@ Authorization: Bearer <JWT_TOKEN>
 请求：
 
 ```json
-{ "oldPassword": "Demo123456", "newPassword": "NewPass123" }
+{ "oldPassword": "YourPass123", "newPassword": "NewPass1234" }
 ```
 
 ---

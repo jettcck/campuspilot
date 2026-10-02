@@ -100,7 +100,7 @@ if curl -sf http://localhost/api/health >/dev/null 2>&1; then
   echo "  访问地址：${PUBLIC_IP}"
   echo "  接口地址：${PUBLIC_IP}/api/health"
   echo "  AI 状态：${AI_MODE}"
-  echo "  演示账号：demo@campuspilot.dev / Demo123456"
+  echo "  首次使用请注册账号（工作台支持一键导入示例数据）"
   echo ""
   if [[ "$AI_MODE" != "remote" ]]; then
     warn "AI 未接通（当前 ${AI_MODE}）；如需真实大模型，请填写服务器上 .env 的 AI_API_KEY 后执行 docker compose up -d"

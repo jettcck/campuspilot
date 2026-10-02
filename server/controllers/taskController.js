@@ -1,22 +1,24 @@
 import { collection } from '../utils/store.js'
-import { ApiError, asyncHandler, ok } from '../utils/http.js'
+import { ApiError, asyncHandler, escapeRegex, ok, pageMeta, resolvePagination } from '../utils/http.js'
 import { serialize } from '../utils/serialize.js'
 
 export const taskController = {
-  /** 任务列表：支持状态、课程、关键词筛选 */
+  /** 任务列表：支持状态、课程、关键词筛选，统一分页返回 */
   list: asyncHandler(async (req, res) => {
-    const { status, courseId, keyword, limit } = req.query
+    const { status, courseId, keyword } = req.query
     const filter = { userId: req.user.id }
     if (status === 'done') filter.done = true
     if (status === 'todo') filter.done = false
     if (courseId) filter.courseId = courseId
-    if (keyword) filter.title = { $regex: keyword, $options: 'i' }
+    if (keyword) filter.title = { $regex: escapeRegex(keyword), $options: 'i' }
 
-    const tasks = await collection('tasks').find(filter, {
-      sort: { createdAt: -1 },
-      limit: limit ? Number(limit) : undefined
-    })
-    ok(res, { tasks: tasks.map(serialize), total: tasks.length })
+    const pagination = resolvePagination(req.query)
+    const tasks = collection('tasks')
+    const [list, total] = await Promise.all([
+      tasks.find(filter, { sort: { createdAt: -1 }, skip: pagination.skip, limit: pagination.limit }),
+      tasks.count(filter)
+    ])
+    ok(res, { tasks: list.map(serialize), ...pageMeta(total, pagination) })
   }),
 
   detail: asyncHandler(async (req, res) => {

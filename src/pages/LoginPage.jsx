@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 export default function LoginPage() {
   const { login, register } = useAuth()
   const [mode, setMode] = useState('login')
-  const [form, setForm] = useState({ email: 'demo@campuspilot.dev', password: 'Demo123456', username: '', school: '', major: '', grade: '' })
+  const [form, setForm] = useState({ email: '', password: '', username: '', school: '', major: '', grade: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -24,8 +24,6 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
-
-  const fillDemo = () => setForm({ ...form, email: 'demo@campuspilot.dev', password: 'Demo123456' })
 
   return (
     <div className="auth-page">
@@ -75,11 +73,6 @@ export default function LoginPage() {
               {loading ? '处理中…' : mode === 'login' ? '登录 CampusPilot' : '创建账号'}
             </button>
           </form>
-
-          <div className="auth-footer">
-            <button type="button" onClick={fillDemo}>使用演示账号</button>
-            <span>demo@campuspilot.dev / Demo123456</span>
-          </div>
         </div>
       </div>
     </div>

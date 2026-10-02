@@ -24,7 +24,9 @@ COPY --from=builder /app/dist ./dist
 RUN mkdir -p /app/uploads /app/server/data
 
 EXPOSE 3001
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD wget -qO- http://localhost:3001/api/health || exit 1
+# 端口用 ${PORT} 而非写死：Render / Railway 等平台会注入自己的 PORT
+# start-period 放宽到 30s，给冷启动时连接 MongoDB Atlas 留足时间
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
+  CMD wget -qO- "http://localhost:${PORT}/api/health" || exit 1
 
 CMD ["node", "server/index.js"]

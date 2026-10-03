@@ -74,6 +74,12 @@ const isSameOrigin = (origin, host) => {
  * 开发环境放行全部来源以便本地联调与内网穿透调试。
  */
 export const corsPolicy = (req, res, next) => {
+  // 无论本次请求是否携带 Origin 都要声明 Vary：
+  // 若只在携带 Origin 时才声明，同一个 URL 就会因请求头不同而产生两种 Vary 值，
+  // 共享缓存可能把「无 Origin」的那份响应（不含 ACAO）命中给跨域请求，导致 CORS 失败。
+  // 这里用 setHeader，后续 compression 会以追加方式补上 Accept-Encoding，二者不会互相覆盖。
+  res.setHeader('Vary', 'Origin')
+
   const origin = req.headers.origin
   if (!origin) return next()
 
@@ -81,7 +87,6 @@ export const corsPolicy = (req, res, next) => {
   if (!allowed) return next(new ApiError(403, '该来源未被允许访问', 'CORS_FORBIDDEN'))
 
   res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Credentials', 'true')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Request-Id')

@@ -1,6 +1,6 @@
-# ============================================================
+﻿# ============================================================
 # CampusPilot 本地一键启动脚本（Windows / PowerShell）
-# 作用：拉起后端服务 + Cloudflare 临时隧道，并自动打印公网地址
+# 作用：构建前端产物，拉起后端服务 + Cloudflare 临时隧道，并自动打印公网地址
 #
 # 用法：
 #   .\deploy\start-local.ps1                 # 启动后端 + 隧道
@@ -63,15 +63,15 @@ $UrlFile = Join-Path $RunDir "public-url.txt"
 try {
     Set-Location $ProjectRoot
 
-    # ---------- [0/5] 清理上一次的残留 ----------
-    Write-Host "[0/5] 清理端口与上次日志..." -ForegroundColor Green
+    # ---------- [0/6] 清理上一次的残留 ----------
+    Write-Host "[0/6] 清理端口与上次日志..." -ForegroundColor Green
     Free-Port $Port
     Remove-Item $BackendOut, $BackendErr, $TunnelOut, $TunnelErr, $UrlFile -ErrorAction SilentlyContinue
     # IDE 重启后可能残留该变量，会关闭 TLS 证书校验，这里在会话内剔除
     Remove-Item Env:NODE_TLS_REJECT_UNAUTHORIZED -ErrorAction SilentlyContinue
 
-    # ---------- [1/5] 检查依赖 ----------
-    Write-Host "[1/5] 检查项目依赖..." -ForegroundColor Green
+    # ---------- [1/6] 检查依赖 ----------
+    Write-Host "[1/6] 检查项目依赖..." -ForegroundColor Green
     if (-not (Test-Path (Join-Path $ProjectRoot ".env"))) {
         if (Test-Path (Join-Path $ProjectRoot ".env.example")) {
             Copy-Item (Join-Path $ProjectRoot ".env.example") (Join-Path $ProjectRoot ".env")
@@ -86,8 +86,27 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "npm install 失败" }
     }
 
-    # ---------- [2/5] 启动后端 ----------
-    Write-Host "[2/5] 启动后端服务（端口 $Port）..." -ForegroundColor Green
+    # ---------- [2/6] 构建前端产物 ----------
+    # 生产模式下 Express 托管的是 dist/，不重新构建就会一直对外提供过期页面
+    Write-Host "[2/6] 构建前端产物..." -ForegroundColor Green
+    $prevEap = $ErrorActionPreference
+    # vite 构建时会向 stderr 写 NODE_ENV 提示，而脚本开头设了 ErrorActionPreference=Stop，
+    # 不临时降级的话，这行提示会被当成错误直接中断整个部署
+    $ErrorActionPreference = "Continue"
+    $buildOut = & npm run build 2>&1
+    $buildCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+    if ($buildCode -ne 0) {
+        Write-Host "      前端构建失败，错误输出：" -ForegroundColor Red
+        $buildOut | Select-Object -Last 20 | ForEach-Object { Write-Host "      $_" -ForegroundColor Red }
+        throw "前端构建失败（exit=$buildCode）"
+    }
+    $distIndex = Join-Path $ProjectRoot "dist\index.html"
+    if (-not (Test-Path $distIndex)) { throw "构建完成但缺少 dist\index.html" }
+    Write-Host "      构建完成：$distIndex" -ForegroundColor Green
+
+    # ---------- [3/6] 启动后端 ----------
+    Write-Host "[3/6] 启动后端服务（端口 $Port）..." -ForegroundColor Green
     $BackendProc = Start-Process -FilePath "node" -ArgumentList "server/index.js" `
         -WorkingDirectory $ProjectRoot -PassThru -WindowStyle Hidden `
         -RedirectStandardOutput $BackendOut -RedirectStandardError $BackendErr
@@ -117,8 +136,8 @@ try {
         while ($true) { Start-Sleep -Seconds 3600 }
     }
 
-    # ---------- [3/5] 准备 cloudflared ----------
-    Write-Host "[3/5] 检查 Cloudflare 隧道程序..." -ForegroundColor Green
+    # ---------- [4/6] 准备 cloudflared ----------
+    Write-Host "[4/6] 检查 Cloudflare 隧道程序..." -ForegroundColor Green
     $cf = Join-Path $env:TEMP "cloudflared.exe"
     if (-not (Test-Path $cf)) {
         Write-Host "      未找到 cloudflared，正在下载..." -ForegroundColor Yellow
@@ -126,8 +145,8 @@ try {
     }
     Write-Host "      已就绪：$cf"
 
-    # ---------- [4/5] 启动隧道 ----------
-    Write-Host "[4/5] 启动公网隧道..." -ForegroundColor Green
+    # ---------- [5/6] 启动隧道 ----------
+    Write-Host "[5/6] 启动公网隧道..." -ForegroundColor Green
     $TunnelProc = Start-Process -FilePath $cf `
         -ArgumentList "tunnel", "--url", "http://localhost:$Port", "--no-autoupdate" `
         -PassThru -WindowStyle Hidden `
@@ -135,11 +154,11 @@ try {
 
     $publicUrl = Wait-Url -Files @($TunnelErr, $TunnelOut) -Pattern "https://[a-z0-9-]+\.trycloudflare\.com" -TimeoutSec 60
 
-    # ---------- [5/5] 输出结果 ----------
+    # ---------- [6/6] 输出结果 ----------
     Write-Host ""
     if ($publicUrl) {
         $publicUrl | Set-Content -Path $UrlFile -Encoding UTF8
-        Write-Host "[5/5] 启动完成" -ForegroundColor Green
+        Write-Host "[6/6] 启动完成" -ForegroundColor Green
         Write-Host ""
         Write-Host "  本机访问： http://localhost:$Port" -ForegroundColor Cyan
         Write-Host "  公网访问： $publicUrl" -ForegroundColor Cyan
@@ -148,7 +167,7 @@ try {
         Write-Host "  首次使用请注册账号（工作台支持一键导入示例数据）" -ForegroundColor DarkGray
         Write-Host "  地址已存至： $UrlFile" -ForegroundColor DarkGray
     } else {
-        Write-Host "[5/5] 隧道已启动，但未能自动解析公网地址" -ForegroundColor Yellow
+        Write-Host "[6/6] 隧道已启动，但未能自动解析公网地址" -ForegroundColor Yellow
         Write-Host "      请查看日志：$TunnelErr" -ForegroundColor Yellow
         Write-Host "      登录页仍可用：http://localhost:$Port" -ForegroundColor Cyan
     }
